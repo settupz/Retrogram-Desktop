@@ -66,4 +66,26 @@ if officialTarget != '':
     if arch != '':
         arguments.append(arch)
 
+filtered_args = []
+skip_next = False
+for i, arg in enumerate(arguments):
+    if skip_next:
+        skip_next = False
+        continue
+    if arg == '-D' and i + 1 < len(arguments):
+        nxt = arguments[i + 1]
+        if nxt.startswith('TDESKTOP_API_TEST=') or nxt.startswith('CMAKE_COMPILE_WARNING_AS_ERROR=') or nxt.startswith('DESKTOP_APP_DISABLE_AUTOUPDATE='):
+            skip_next = True
+            continue
+    if arg.startswith('-DTDESKTOP_API_TEST=') or arg.startswith('-DCMAKE_COMPILE_WARNING_AS_ERROR='):
+        continue
+    filtered_args.append(arg)
+
+arguments = filtered_args + [
+    '-DTDESKTOP_API_ID=611335',
+    '-DTDESKTOP_API_HASH=d524b414d21f4d37f0864c1df41ac9c',
+    '-DDESKTOP_APP_DISABLE_AUTOUPDATE=ON',
+    '-DCMAKE_COMPILE_WARNING_AS_ERROR=OFF',
+]
+
 finish(run_cmake.run(scriptName, arguments))

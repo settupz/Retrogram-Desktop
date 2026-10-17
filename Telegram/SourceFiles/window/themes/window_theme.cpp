@@ -565,6 +565,10 @@ void ChatBackground::start() {
 	}, _lifetime);
 
 	initialRead();
+	if (_themeObject.pathAbsolute.isEmpty() && !nightMode()) {
+		reapplyWithNightMode(NightThemePath(), true);
+		KeepApplied();
+	}
 
 	Core::App().domain().activeSessionValue(
 	) | rpl::filter([=](Main::Session *session) {

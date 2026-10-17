@@ -367,6 +367,24 @@ void BuildSectionButtons(SectionBuilder &builder) {
 	const auto controller = builder.controller();
 	const auto showOther = builder.showOther();
 
+	builder.addButton({
+		.id = u"main/retrogram"_q,
+		.title = rpl::single(u"Retrogram (Настройки мода)"_q),
+		.icon = { &st::menuIconSettings },
+		.label = rpl::single(u"v1.0 Retro"_q),
+		.onClick = [=] {
+			controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+				box->setTitle(rpl::single(u"Retrogram — Настройки мода"_q));
+				box->addRow(object_ptr<Ui::FlatLabel>(
+					box->verticalLayout(),
+					rpl::single(u"Классическая геометрия (острые углы 2px/4px) и палитра Tinted активны.\nСюда будут добавляться все кастомные функции и переключатели Retrogram."_q),
+					st::boxLabel));
+				box->addButton(tr::lng_box_ok(), [=] { box->closeBox(); });
+			}));
+		},
+		.keywords = { u"retrogram"_q, u"mod"_q, u"retro"_q },
+	});
+
 	if (!session->supportMode()) {
 		builder.addButton({
 			.title = tr::lng_settings_my_account(),
