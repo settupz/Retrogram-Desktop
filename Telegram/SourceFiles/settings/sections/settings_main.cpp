@@ -88,7 +88,14 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_menu_icons.h"
 #include "styles/style_settings.h"
 
+#include <QtCore/QDir>
+#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
+#include <QtCore/QJsonDocument>
+#include <QtCore/QJsonObject>
+#include <QtCore/QUrl>
 #include <QtGui/QClipboard>
+#include <QtGui/QDesktopServices>
 #include <QtGui/QGuiApplication>
 #include <QtGui/QWindow>
 
@@ -98,6 +105,112 @@ namespace {
 using namespace Builder;
 
 constexpr auto kSugValidatePhone = "VALIDATE_PHONE_NUMBER"_cs;
+
+struct RetrogramPluginEntry {
+	QString id;
+	QString title;
+	bool enabled = false;
+};
+
+[[nodiscard]] QString RetrogramPluginsDir() {
+	const auto dir = cWorkingDir() + u"tdata/plugins"_q;
+	QDir().mkpath(dir);
+	return dir;
+}
+
+[[nodiscard]] QString RetrogramPluginsStatePath() {
+	return RetrogramPluginsDir() + u"/plugins_state.json"_q;
+}
+
+[[nodiscard]] QJsonObject ReadRetrogramPluginsState() {
+	QFile file(RetrogramPluginsStatePath());
+	if (!file.open(QIODevice::ReadOnly)) {
+		return QJsonObject{
+			{ u"engine_enabled"_q, true },
+			{ u"plugins"_q, QJsonObject() },
+		};
+	}
+	const auto doc = QJsonDocument::fromJson(file.readAll());
+	if (!doc.isObject()) {
+		return QJsonObject{
+			{ u"engine_enabled"_q, true },
+			{ u"plugins"_q, QJsonObject() },
+		};
+	}
+	return doc.object();
+}
+
+void WriteRetrogramPluginsState(const QJsonObject &state) {
+	QFile file(RetrogramPluginsStatePath());
+	if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+		file.write(QJsonDocument(state).toJson(QJsonDocument::Indented));
+	}
+}
+
+[[nodiscard]] bool IsRetrogramPluginEngineEnabled() {
+	return ReadRetrogramPluginsState().value(u"engine_enabled"_q).toBool(true);
+}
+
+void SetRetrogramPluginEngineEnabled(bool enabled) {
+	auto state = ReadRetrogramPluginsState();
+	state.insert(u"engine_enabled"_q, enabled);
+	WriteRetrogramPluginsState(state);
+}
+
+void SetRetrogramPluginEnabled(const QString &id, bool enabled) {
+	auto state = ReadRetrogramPluginsState();
+	auto plugins = state.value(u"plugins"_q).toObject();
+	plugins.insert(id, enabled);
+	state.insert(u"plugins"_q, plugins);
+	WriteRetrogramPluginsState(state);
+}
+
+[[nodiscard]] std::vector<RetrogramPluginEntry> ScanRetrogramPlugins() {
+	auto result = std::vector<RetrogramPluginEntry>();
+	const auto state = ReadRetrogramPluginsState();
+	const auto enabledMap = state.value(u"plugins"_q).toObject();
+	QDir dir(RetrogramPluginsDir());
+	const auto files = dir.entryInfoList(
+		QStringList{
+			u"*.plugin"_q,
+			u"*.js"_q,
+			u"*.py"_q,
+			u"*.lua"_q,
+			u"*.dll"_q,
+			u"*.json"_q,
+		},
+		QDir::Files | QDir::Readable,
+		QDir::Name);
+	for (const auto &info : files) {
+		if (info.fileName() == u"plugins_state.json"_q) {
+			continue;
+		}
+		auto title = info.fileName();
+		if (info.suffix().compare(u"json"_q, Qt::CaseInsensitive) == 0
+			|| info.suffix().compare(u"plugin"_q, Qt::CaseInsensitive) == 0) {
+			QFile f(info.absoluteFilePath());
+			if (f.open(QIODevice::ReadOnly)) {
+				const auto doc = QJsonDocument::fromJson(f.readAll());
+				if (doc.isObject()) {
+					const auto obj = doc.object();
+					const auto name = obj.value(u"name"_q).toString();
+					const auto version = obj.value(u"version"_q).toString();
+					if (!name.isEmpty()) {
+						title = version.isEmpty()
+							? name
+							: (name + u" (v"_q + version + u")"_q);
+					}
+				}
+			}
+		}
+		result.push_back(RetrogramPluginEntry{
+			.id = info.fileName(),
+			.title = title,
+			.enabled = enabledMap.value(info.fileName()).toBool(true),
+		});
+	}
+	return result;
+}
 
 class Cover final : public Ui::FixedHeightWidget {
 public:
@@ -375,14 +488,66 @@ void BuildSectionButtons(SectionBuilder &builder) {
 		.onClick = [=] {
 			controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 				box->setTitle(rpl::single(u"Retrogram — Настройки мода"_q));
-				box->addRow(object_ptr<Ui::FlatLabel>(
-					box->verticalLayout(),
-					rpl::single(u"Классическая геометрия (острые углы 2px/4px) и палитра Tinted активны.\nСюда будут добавляться все кастомные функции и переключатели Retrogram."_q),
-					st::boxLabel));
+				const auto layout = box->verticalLayout();
+
+				Ui::AddSubsectionTitle(
+					layout,
+					rpl::single(u"Поддержка плагинов"_q));
+
+				const auto engineBtn = AddButtonWithIcon(
+					layout,
+					rpl::single(u"Включить движок плагинов"_q),
+					st::settingsButtonNoIcon);
+				engineBtn->toggleOn(
+					rpl::single(IsRetrogramPluginEngineEnabled())
+				)->toggledChanges(
+				) | rpl::on_next([](bool checked) {
+					SetRetrogramPluginEngineEnabled(checked);
+				}, engineBtn->lifetime());
+
+				const auto openFolderBtn = AddButtonWithIcon(
+					layout,
+					rpl::single(u"Открыть папку плагинов (tdata/plugins)"_q),
+					st::settingsButtonNoIcon);
+				openFolderBtn->setClickedCallback([=] {
+					QDesktopServices::openUrl(
+						QUrl::fromLocalFile(RetrogramPluginsDir()));
+				});
+
+				Ui::AddSkip(layout);
+				Ui::AddDivider(layout);
+				Ui::AddSkip(layout);
+
+				Ui::AddSubsectionTitle(
+					layout,
+					rpl::single(u"Установленные плагины"_q));
+
+				const auto plugins = ScanRetrogramPlugins();
+				if (plugins.empty()) {
+					box->addRow(object_ptr<Ui::FlatLabel>(
+						layout,
+						rpl::single(u"Установленных плагинов нет.\nПоместите файлы (.plugin, .js, .py, .lua, .dll, .json) в папку tdata/plugins."_q),
+						st::boxLabel));
+				} else {
+					for (const auto &plugin : plugins) {
+						const auto pluginId = plugin.id;
+						const auto btn = AddButtonWithIcon(
+							layout,
+							rpl::single(plugin.title),
+							st::settingsButtonNoIcon);
+						btn->toggleOn(
+							rpl::single(plugin.enabled)
+						)->toggledChanges(
+						) | rpl::on_next([=](bool checked) {
+							SetRetrogramPluginEnabled(pluginId, checked);
+						}, btn->lifetime());
+					}
+				}
+
 				box->addButton(tr::lng_box_ok(), [=] { box->closeBox(); });
 			}));
 		},
-		.keywords = { u"retrogram"_q, u"mod"_q, u"retro"_q },
+		.keywords = { u"retrogram"_q, u"mod"_q, u"retro"_q, u"plugins"_q },
 	});
 
 	if (!session->supportMode()) {
