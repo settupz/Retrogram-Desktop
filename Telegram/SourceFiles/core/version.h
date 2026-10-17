@@ -27,3 +27,4 @@ constexpr auto AppVersionStr = "7.3.1";
 constexpr auto AppBetaVersion = false;
 constexpr auto AppAlphaVersion = TDESKTOP_ALPHA_VERSION;
 // Retrogram Desktop Fork
+// v1.0.0
