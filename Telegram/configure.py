@@ -66,6 +66,30 @@ if officialTarget != '':
     if arch != '':
         arguments.append(arch)
 
+import shutil
+for base_dir in [
+    os.path.abspath(os.path.join(scriptPath, '../../Libraries/win64/tdesktop_rust')),
+    os.path.abspath(os.path.join(scriptPath, '../../Libraries/tdesktop_rust')),
+]:
+    src_cpp = os.path.join(base_dir, 'out', 'src', 'wallet_engine', 'wallet_engine.cpp')
+    inc_cpp = os.path.join(base_dir, 'out', 'include', 'wallet_engine', 'wallet_engine.cpp')
+    if not os.path.exists(src_cpp):
+        os.makedirs(os.path.dirname(src_cpp), exist_ok=True)
+        if os.path.exists(inc_cpp):
+            shutil.copyfile(inc_cpp, src_cpp)
+        else:
+            # Re-generate with cargo bindgen if dll exists
+            dll = os.path.join(base_dir, 'target', 'x86_64-pc-windows-msvc', 'release', 'tdesktop_rust.dll')
+            manifest = os.path.join(base_dir, '..', 'wallet-engine', 'bindgen', 'cpp', 'bindgen', 'Cargo.toml')
+            cargo = os.path.abspath(os.path.join(scriptPath, '../../ThirdParty/rust/cargo/bin/cargo.exe'))
+            if not os.path.exists(cargo):
+                cargo = 'cargo'
+            if os.path.exists(manifest) and os.path.exists(dll):
+                import subprocess
+                subprocess.run([cargo, 'run', '--manifest-path', manifest, '--locked', '--', '--library', '--out-dir', os.path.join(base_dir, 'out', 'include', 'wallet_engine'), dll], cwd=base_dir)
+                if os.path.exists(inc_cpp):
+                    shutil.copyfile(inc_cpp, src_cpp)
+
 filtered_args = []
 skip_next = False
 for i, arg in enumerate(arguments):
