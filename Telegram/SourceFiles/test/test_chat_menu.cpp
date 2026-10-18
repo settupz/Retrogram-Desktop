@@ -1077,7 +1077,11 @@ struct SelfTestState {
 }
 
 [[nodiscard]] QString WindowStateText(Qt::WindowStates states) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 	return u"0x"_q + QString::number(WithoutActive(states).toInt(), 16);
+#else
+	return u"0x"_q + QString::number(int(WithoutActive(states)), 16);
+#endif
 }
 
 [[nodiscard]] int ViewTop(QWidget *list, not_null<Element*> view) {

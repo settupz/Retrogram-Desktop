@@ -142,7 +142,11 @@ bool DragProbe::eventHook(QEvent *e) {
 }
 
 void DragProbe::mousePressEvent(QMouseEvent *e) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 	_pressed = e->position().toPoint();
+#else
+	_pressed = e->pos();
+#endif
 	record(u"press"_q, e);
 	e->accept();
 }
@@ -150,7 +154,11 @@ void DragProbe::mousePressEvent(QMouseEvent *e) {
 void DragProbe::mouseMoveEvent(QMouseEvent *e) {
 	++_log->moves;
 	record(u"move"_q, e);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 	const auto point = e->position().toPoint();
+#else
+	const auto point = e->pos();
+#endif
 	if (!_crossed
 		&& (e->buttons() & Qt::LeftButton)
 		&& ((point - _pressed).manhattanLength()
@@ -177,15 +185,23 @@ void DragProbe::leaveEventHook(QEvent *e) {
 }
 
 void DragProbe::record(const QString &kind, QMouseEvent *e) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 	const auto point = e->position().toPoint();
+	const auto buttons = QString::number(e->buttons().toInt());
+	const auto modifiers = QString::number(e->modifiers().toInt());
+#else
+	const auto point = e->pos();
+	const auto buttons = QString::number(int(e->buttons()));
+	const auto modifiers = QString::number(int(e->modifiers()));
+#endif
 	_log->inputs.push_back(
 		u"%1 %2,%3 button=%4 buttons=%5 modifiers=%6"_q.arg(
 			kind,
 			QString::number(point.x()),
 			QString::number(point.y()),
 			QString::number(int(e->button())),
-			QString::number(e->buttons().toInt()),
-			QString::number(e->modifiers().toInt())));
+			buttons,
+			modifiers));
 	_log->order.push_back(kind);
 }
 
