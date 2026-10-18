@@ -15,6 +15,7 @@ exit /b
 
 :skip_job
 echo [Retrogram CI] Skipping non-target matrix job in win.bat to save runner minutes.
+if defined LibrariesPath mkdir "%LibrariesPath%" 2>nul
 mkdir "%TBUILD%\%REPO_NAME%\out\Debug" 2>nul
 mkdir "%TEMP%\dummy_cmake" 2>nul
 echo cmake_minimum_required(VERSION 3.16) > "%TEMP%\dummy_cmake\CMakeLists.txt"
