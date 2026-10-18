@@ -3,12 +3,11 @@
 setlocal enabledelayedexpansion
 set "FullScriptPath=%~dp0"
 
-if "%~1"=="-G" goto skip_job
-if not "%~3"=="" goto skip_job
-if defined LibrariesPath (
-    echo "%LibrariesPath%" | findstr /i "win64" >nul
-    if errorlevel 1 goto skip_job
+if exist "%TBUILD%\%REPO_NAME%\out\Debug\Telegram.exe" (
+    findstr /m "skipped" "%TBUILD%\%REPO_NAME%\out\Debug\Telegram.exe" >nul 2>&1
+    if not errorlevel 1 goto skip_job
 )
+if "%~1"=="-G" goto skip_job
 
 python %FullScriptPath%configure.py %*
 if %errorlevel% neq 0 goto error
