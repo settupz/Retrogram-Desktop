@@ -107,7 +107,7 @@ for i, arg in enumerate(arguments):
 
 arguments = filtered_args + [
     '-DTDESKTOP_API_ID=611335',
-    '-DTDESKTOP_API_HASH=d524b414d21f4d37f0864c1df41ac9c',
+    '-DTDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c',
     '-DDESKTOP_APP_DISABLE_AUTOUPDATE=ON',
     '-DCMAKE_COMPILE_WARNING_AS_ERROR=OFF',
 ]
