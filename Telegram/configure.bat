@@ -28,6 +28,9 @@ del /s /q "%TBUILD%\Libraries\*.o" 2>nul
 del /s /q "%TBUILD%\Libraries\*.pdb" 2>nul
 del /s /q "%TBUILD%\Libraries\*.pch" 2>nul
 
+mkdir "%TBUILD%\%REPO_NAME%\out\Debug" 2>nul
+echo skipped > "%TBUILD%\%REPO_NAME%\out\Debug\Updater.exe"
+
 python %FullScriptPath%configure.py %*
 if %errorlevel% neq 0 goto error
 
