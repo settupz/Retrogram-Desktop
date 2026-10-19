@@ -8,6 +8,19 @@ if defined LibrariesPath (
     if errorlevel 1 goto skip_job
 )
 
+echo [Retrogram CI] Freeing disk space on drive C: before library build...
+rmdir /s /q "C:\Program Files\Android" 2>nul
+rmdir /s /q "C:\Program Files (x86)\Android" 2>nul
+rmdir /s /q "C:\hostedtoolcache\windows\Ruby" 2>nul
+rmdir /s /q "C:\hostedtoolcache\windows\go" 2>nul
+rmdir /s /q "C:\hostedtoolcache\windows\stack" 2>nul
+rmdir /s /q "C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk" 2>nul
+rmdir /s /q "C:\Program Files\MySQL" 2>nul
+rmdir /s /q "C:\Program Files\MongoDB" 2>nul
+rmdir /s /q "C:\Strawberry" 2>nul
+rmdir /s /q "C:\vcpkg" 2>nul
+rmdir /s /q "C:\tools" 2>nul
+
 python %FullScriptPath%prepare.py %*
 if %errorlevel% neq 0 goto error
 
