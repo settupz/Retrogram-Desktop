@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/chat/message_bubble.h"
 
+#include "core/retrogram_settings.h"
+
 #include "ui/cached_round_corners.h"
 #include "ui/image/image_prepare.h"
 #include "ui/chat/chat_style.h"
@@ -82,8 +84,11 @@ void PaintBubbleGeneric(
 
 	const auto topLeft = args.rounding.topLeft;
 	const auto topRight = args.rounding.topRight;
-	const auto bottomWithTailLeft = args.rounding.bottomLeft;
-	const auto bottomWithTailRight = args.rounding.bottomRight;
+	const auto noTails = !::Retrogram::Config().showBubbleTails.current();
+	const auto rawBottomLeft = args.rounding.bottomLeft;
+	const auto rawBottomRight = args.rounding.bottomRight;
+	const auto bottomWithTailLeft = (noTails && rawBottomLeft == Corner::Tail) ? Corner::Large : rawBottomLeft;
+	const auto bottomWithTailRight = (noTails && rawBottomRight == Corner::Tail) ? Corner::Large : rawBottomRight;
 	if (topLeft == Corner::None
 		&& topRight == Corner::None
 		&& bottomWithTailLeft == Corner::None

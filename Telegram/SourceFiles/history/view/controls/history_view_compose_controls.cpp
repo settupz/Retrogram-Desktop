@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "history/view/controls/history_view_compose_controls.h"
 
+#include "core/retrogram_settings.h"
+
 #include "history/view/controls/history_view_bot_menu_button.h"
 
 #include "base/call_delayed.h"
@@ -5224,7 +5226,10 @@ void ComposeControls::updateControlsVisibility() {
 		_botMenu->show();
 	}
 	if (_attachToggle) {
-		_attachToggle->setVisible(!_replaceMedia);
+		_attachToggle->setVisible(!_replaceMedia && ::Retrogram::Config().showAttachButton.current());
+	}
+	if (_tabbedSelectorToggle && !::Retrogram::Config().showEmojiButton.current()) {
+		_tabbedSelectorToggle->hide();
 	}
 	if (_scheduled) {
 		_scheduled->setVisible(!hide);

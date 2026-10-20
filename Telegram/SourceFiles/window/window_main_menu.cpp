@@ -42,6 +42,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "settings/sections/settings_advanced.h"
 #include "settings/sections/settings_calls.h"
 #include "settings/sections/settings_information.h"
+
+#include "settings/sections/settings_retrogram.h"
+
+#include "core/retrogram_settings.h"
 #include "storage/localstorage.h"
 #include "storage/storage_account.h"
 #include "support/support_templates.h"
@@ -768,11 +772,20 @@ void MainMenu::setupMenu() {
 		});
 	}
 	addAction(
-		tr::lng_menu_settings(),
+		rpl::single(u"Настройки Retrogram"_q),
 		{ &st::menuIconSettings }
 	)->setClickedCallback([=] {
-		controller->showSettings();
+		controller->showSettings(Settings::RetrogramId());
 	});
+
+	if (::Retrogram::Config().showDrawerSettings.current()) {
+		addAction(
+			tr::lng_menu_settings(),
+			{ &st::menuIconSettings }
+		)->setClickedCallback([=] {
+			controller->showSettings();
+		});
+	}
 
 	_nightThemeToggle = addAction(
 		tr::lng_menu_night_mode(),

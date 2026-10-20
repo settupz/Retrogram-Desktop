@@ -56,6 +56,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "settings/sections/settings_credits.h"
 #include "settings/sections/settings_folders.h"
 #include "settings/sections/settings_information.h"
+
+#include "settings/sections/settings_retrogram.h"
+
+#include "core/retrogram_settings.h"
 #include "settings/sections/settings_notifications.h"
 #include "settings/settings_power_saving.h"
 #include "settings/sections/settings_premium.h"
@@ -480,74 +484,11 @@ void BuildSectionButtons(SectionBuilder &builder) {
 	const auto controller = builder.controller();
 	const auto showOther = builder.showOther();
 
-	builder.addButton({
-		.id = u"main/retrogram"_q,
-		.title = rpl::single(u"Retrogram (Настройки мода)"_q),
+	builder.addSectionButton({
+		.title = rpl::single(u"Настройки Retrogram"_q),
+		.targetSection = RetrogramId(),
 		.icon = { &st::menuIconSettings },
-		.label = rpl::single(u"v1.0 Retro"_q),
-		.onClick = [=] {
-			controller->show(Box([=](not_null<Ui::GenericBox*> box) {
-				box->setTitle(rpl::single(u"Retrogram — Настройки мода"_q));
-				const auto layout = box->verticalLayout();
-
-				Ui::AddSubsectionTitle(
-					layout,
-					rpl::single(u"Поддержка плагинов"_q));
-
-				const auto engineBtn = AddButtonWithIcon(
-					layout,
-					rpl::single(u"Включить движок плагинов"_q),
-					st::settingsButtonNoIcon);
-				engineBtn->toggleOn(
-					rpl::single(IsRetrogramPluginEngineEnabled())
-				)->toggledChanges(
-				) | rpl::on_next([](bool checked) {
-					SetRetrogramPluginEngineEnabled(checked);
-				}, engineBtn->lifetime());
-
-				const auto openFolderBtn = AddButtonWithIcon(
-					layout,
-					rpl::single(u"Открыть папку плагинов (tdata/plugins)"_q),
-					st::settingsButtonNoIcon);
-				openFolderBtn->setClickedCallback([=] {
-					QDesktopServices::openUrl(
-						QUrl::fromLocalFile(RetrogramPluginsDir()));
-				});
-
-				Ui::AddSkip(layout);
-				Ui::AddDivider(layout);
-				Ui::AddSkip(layout);
-
-				Ui::AddSubsectionTitle(
-					layout,
-					rpl::single(u"Установленные плагины"_q));
-
-				const auto plugins = ScanRetrogramPlugins();
-				if (plugins.empty()) {
-					box->addRow(object_ptr<Ui::FlatLabel>(
-						layout,
-						rpl::single(u"Установленных плагинов нет.\nПоместите файлы (.plugin, .js, .py, .lua, .dll, .json) в папку tdata/plugins."_q),
-						st::boxLabel));
-				} else {
-					for (const auto &plugin : plugins) {
-						const auto pluginId = plugin.id;
-						const auto btn = AddButtonWithIcon(
-							layout,
-							rpl::single(plugin.title),
-							st::settingsButtonNoIcon);
-						btn->toggleOn(
-							rpl::single(plugin.enabled)
-						)->toggledChanges(
-						) | rpl::on_next([=](bool checked) {
-							SetRetrogramPluginEnabled(pluginId, checked);
-						}, btn->lifetime());
-					}
-				}
-
-				box->addButton(tr::lng_box_ok(), [=] { box->closeBox(); });
-			}));
-		},
-		.keywords = { u"retrogram"_q, u"mod"_q, u"retro"_q, u"plugins"_q },
+		.keywords = { u"retrogram"_q, u"tgx"_q, u"customization"_q },
 	});
 
 	if (!session->supportMode()) {
@@ -683,6 +624,9 @@ void BuildInterfaceScale(SectionBuilder &builder) {
 }
 
 void BuildPremiumSection(SectionBuilder &builder) {
+	if (::Retrogram::Config().hidePremiumUpsell.current()) {
+		return;
+	}
 	const auto session = builder.session();
 	const auto controller = builder.controller();
 	const auto showOther = builder.showOther();

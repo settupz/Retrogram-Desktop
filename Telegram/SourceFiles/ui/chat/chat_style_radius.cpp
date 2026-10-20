@@ -6,6 +6,8 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/chat/chat_style_radius.h"
+
+#include "core/retrogram_settings.h"
 #include "ui/chat/chat_style.h"
 #include "base/options.h"
 
@@ -33,6 +35,10 @@ int BubbleRadiusSmall() {
 }
 
 int BubbleRadiusLarge() {
+	const auto custom = ::Retrogram::Config().bubbleCornerRadius.current();
+	if (custom > 0) {
+		return style::ConvertScale(custom);
+	}
 	static const auto result = [] {
 		if (UseSmallMsgBubbleRadius.value()) {
 			return st::bubbleRadiusSmall;

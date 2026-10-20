@@ -1962,6 +1962,10 @@ PRIVATE
     settings/sections/settings_shortcuts.h
     settings/sections/settings_websites.cpp
     settings/sections/settings_websites.h
+    settings/sections/settings_retrogram.cpp
+    settings/sections/settings_retrogram.h
+    core/retrogram_settings.cpp
+    core/retrogram_settings.h
     storage/details/storage_file_utilities.cpp
     storage/details/storage_file_utilities.h
     storage/details/storage_settings_scheme.cpp

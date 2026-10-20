@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/dialogs_widget.h"
 
+#include "core/retrogram_settings.h"
+
 #include "base/call_delayed.h"
 #include "base/qt/qt_key_modifiers.h"
 #include "base/options.h"
@@ -1946,7 +1948,8 @@ void Widget::updateControlsVisibility(bool fast) {
 		_updateTelegram->show();
 	}
 	_searchControls->setVisible(
-		!_openedFolder && !_openedForum && !_openedCommunity);
+		!_openedFolder && !_openedForum && !_openedCommunity
+		&& ::Retrogram::Config().showSearch.current());
 	if (_moreChatsBar) {
 		_moreChatsBar->show();
 	}
