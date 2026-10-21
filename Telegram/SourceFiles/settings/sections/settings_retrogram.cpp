@@ -279,10 +279,10 @@ void BuildRetrogramContent(SectionBuilder &builder) {
 		}),
 		.onClick = [] {
 			// Cycle through radii: 4 -> 8 -> 12 -> 16 (TG X) -> 20 -> 24 -> 4
-			auto cur = cfg.bubbleCornerRadius.current();
+			auto cur = ::Retrogram::Config().bubbleCornerRadius.current();
 			cur = (cur >= 24) ? 4 : (cur + 4);
-			cfg.bubbleCornerRadius = cur;
-			cfg.save();
+			::Retrogram::Config().bubbleCornerRadius = cur;
+			::Retrogram::Config().save();
 		},
 	});
 
