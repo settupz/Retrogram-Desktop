@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/chat/chat_style.h"
 
+#include "core/retrogram_settings.h"
+
 #include "ui/chat/chat_theme.h"
 #include "ui/chat/chat_theme_readability.h"
 #include "ui/image/image_prepare.h" // ImageRoundRadius
@@ -213,6 +215,23 @@ ChatStyle::ChatStyle(rpl::producer<ColorIndicesCompressed> colorIndices) {
 			_colorIndices = std::move(indices);
 		});
 	}
+
+	::Retrogram::Config().bubbleCornerRadius.changes(
+	) | rpl::on_next([=] {
+		for (auto &style : _messageStyles) {
+			style.msgBgCornersLarge = {};
+		}
+		_msgBotKbOverBgAddCornersLarge = {};
+		_paletteChanged.fire({});
+	}, _retrogramLifetime);
+
+	::Retrogram::Config().showBubbleTails.changes(
+	) | rpl::on_next([=] {
+		for (auto &style : _messageStyles) {
+			style.msgBgCornersLarge = {};
+		}
+		_paletteChanged.fire({});
+	}, _retrogramLifetime);
 
 	finalize();
 	make(_historyPsaForwardPalette, st::historyPsaForwardPalette);

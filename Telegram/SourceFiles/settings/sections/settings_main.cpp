@@ -484,13 +484,6 @@ void BuildSectionButtons(SectionBuilder &builder) {
 	const auto controller = builder.controller();
 	const auto showOther = builder.showOther();
 
-	builder.addSectionButton({
-		.title = rpl::single(u"Настройки Retrogram"_q),
-		.targetSection = RetrogramId(),
-		.icon = { &st::menuIconSettings },
-		.keywords = { u"retrogram"_q, u"tgx"_q, u"customization"_q },
-	});
-
 	if (!session->supportMode()) {
 		builder.addButton({
 			.title = tr::lng_settings_my_account(),

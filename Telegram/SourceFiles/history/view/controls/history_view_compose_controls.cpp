@@ -2872,6 +2872,24 @@ void ComposeControls::init() {
 		updateControlsGeometry(_wrap->size());
 	}, _wrap->lifetime());
 
+	::Retrogram::Config().showAttachButton.changes(
+	) | rpl::on_next([=] {
+		updateControlsVisibility();
+		updateControlsGeometry(_wrap->size());
+	}, _wrap->lifetime());
+
+	::Retrogram::Config().showEmojiButton.changes(
+	) | rpl::on_next([=] {
+		updateControlsVisibility();
+		updateControlsGeometry(_wrap->size());
+	}, _wrap->lifetime());
+
+	::Retrogram::Config().showVoiceButton.changes(
+	) | rpl::on_next([=] {
+		updateControlsVisibility();
+		updateControlsGeometry(_wrap->size());
+	}, _wrap->lifetime());
+
 	if (_botCommandStart) {
 		_botCommandStart->setAccessibleName(tr::lng_bot_commands_start(tr::now));
 		_botCommandStart->setClickedCallback([=] { setText({ "/" }); });
@@ -5027,6 +5045,7 @@ void ComposeControls::updateControlsGeometry(QSize size) {
 	// (_attachDocument|_attachPhoto) _field (_ttlInfo) (_scheduled) (_silent|_botCommandStart) _tabbedSelectorToggle _send
 
 	const auto oldComposeHeight = composeFieldHeight();
+	const auto attachShown = _attachToggle && !_attachToggle->isHidden();
 	const auto commentsShown = _commentsShown
 		&& !_commentsShown->isHidden();
 	const auto giftToUser = _giftToUser
@@ -5035,11 +5054,11 @@ void ComposeControls::updateControlsGeometry(QSize size) {
 		- (commentsShown
 			? (_commentsShown->width() + _st.commentsSkip)
 			: 0)
-		- ((_attachToggle || _sendAs) ? _st.padding.left() : _st.fieldLeft)
+		- ((attachShown || _sendAs) ? _st.padding.left() : _st.fieldLeft)
 		- (_botMenu
 			? (st::historyBotMenuSkip + _botMenu->width())
 			: 0)
-		- (_attachToggle ? _attachToggle->width() : 0)
+		- (attachShown ? _attachToggle->width() : 0)
 		- (_sendAs ? _sendAs->width() : 0)
 		- _st.padding.right()
 		- _send->width()
@@ -5086,7 +5105,7 @@ void ComposeControls::updateControlsGeometry(QSize size) {
 		_commentsShown->moveToLeft(left, buttonsTop);
 		left += _commentsShown->width() + _st.commentsSkip;
 	}
-	left += (_attachToggle || _sendAs) ? _st.padding.left() : _st.fieldLeft;
+	left += (attachShown || _sendAs) ? _st.padding.left() : _st.fieldLeft;
 	if (_botMenu) {
 		const auto skip = st::historyBotMenuSkip;
 		_botMenu->moveToLeft(left + skip, buttonsTop + skip);
@@ -5095,7 +5114,7 @@ void ComposeControls::updateControlsGeometry(QSize size) {
 	if (_replaceMedia) {
 		_replaceMedia->moveToLeft(left, buttonsTop);
 	}
-	if (_attachToggle) {
+	if (attachShown) {
 		_attachToggle->moveToLeft(left, buttonsTop);
 		left += _attachToggle->width();
 	}
@@ -5228,8 +5247,8 @@ void ComposeControls::updateControlsVisibility() {
 	if (_attachToggle) {
 		_attachToggle->setVisible(!_replaceMedia && ::Retrogram::Config().showAttachButton.current());
 	}
-	if (_tabbedSelectorToggle && !::Retrogram::Config().showEmojiButton.current()) {
-		_tabbedSelectorToggle->hide();
+	if (_tabbedSelectorToggle) {
+		_tabbedSelectorToggle->setVisible(!_botKeyboardHide && ::Retrogram::Config().showEmojiButton.current());
 	}
 	if (_scheduled) {
 		_scheduled->setVisible(!hide);

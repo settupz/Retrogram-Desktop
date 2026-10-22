@@ -671,14 +671,34 @@ void MainMenu::setupMenu() {
 			st::mainMenuButton,
 			std::move(descriptor));
 	};
-	if (!_controller->session().supportMode()) {
-		_menu->add(
-			CreateButtonWithIcon(
+	const auto addSlideAction = [&](
+			rpl::producer<QString> text,
+			IconDescriptor &&descriptor,
+			rpl::producer<bool> shown) {
+		const auto wrap = _menu->add(
+			object_ptr<Ui::SlideWrap<Ui::SettingsButton>>(
 				_menu,
-				tr::lng_menu_my_profile(),
-				st::mainMenuButton,
-				{ &st::menuIconProfile })
-		)->setClickedCallback([=] {
+				CreateButtonWithIcon(
+					_menu,
+					std::move(text),
+					st::mainMenuButton,
+					std::move(descriptor))));
+		wrap->toggleOn(std::move(shown));
+		wrap->finishAnimating();
+		return wrap->entity();
+	};
+	if (!_controller->session().supportMode()) {
+		const auto profileWrap = _menu->add(
+			object_ptr<Ui::SlideWrap<Ui::SettingsButton>>(
+				_menu,
+				CreateButtonWithIcon(
+					_menu,
+					tr::lng_menu_my_profile(),
+					st::mainMenuButton,
+					{ &st::menuIconProfile })));
+		profileWrap->toggleOn(::Retrogram::Config().showDrawerProfile.value());
+		profileWrap->finishAnimating();
+		profileWrap->entity()->setClickedCallback([=] {
 			controller->showSection(
 				Info::Stories::MakeMyProfile(controller->session().user()));
 		});
@@ -689,39 +709,44 @@ void MainMenu::setupMenu() {
 			object_ptr<Ui::PlainShadow>(_menu),
 			{ 0, st::mainMenuSkip, 0, st::mainMenuSkip });
 
-		AddMyChannelsBox(addAction(
+		AddMyChannelsBox(addSlideAction(
 			tr::lng_create_group_title(),
-			{ &st::menuIconGroups }
+			{ &st::menuIconGroups },
+			::Retrogram::Config().showDrawerNewGroup.value()
 		), controller, true)->addClickHandler([=](Qt::MouseButton which) {
 			if (which == Qt::LeftButton) {
 				controller->showNewGroup();
 			}
 		});
 
-		AddMyChannelsBox(addAction(
+		AddMyChannelsBox(addSlideAction(
 			tr::lng_create_channel_title(),
-			{ &st::menuIconChannel }
+			{ &st::menuIconChannel },
+			::Retrogram::Config().showDrawerNewChannel.value()
 		), controller, false)->addClickHandler([=](Qt::MouseButton which) {
 			if (which == Qt::LeftButton) {
 				controller->showNewChannel();
 			}
 		});
 
-		addAction(
+		addSlideAction(
 			tr::lng_menu_contacts(),
-			{ &st::menuIconUserShow }
+			{ &st::menuIconUserShow },
+			::Retrogram::Config().showDrawerContacts.value()
 		)->setClickedCallback([=] {
 			controller->show(PrepareContactsBox(controller));
 		});
-		addAction(
+		addSlideAction(
 			tr::lng_menu_calls(),
-			{ &st::menuIconPhone }
+			{ &st::menuIconPhone },
+			::Retrogram::Config().showDrawerCalls.value()
 		)->setClickedCallback([=] {
 			::Calls::ShowCallsBox(controller);
 		});
-		addAction(
+		addSlideAction(
 			tr::lng_saved_messages(),
-			{ &st::menuIconSavedMessages }
+			{ &st::menuIconSavedMessages },
+			::Retrogram::Config().showDrawerSavedMessages.value()
 		)->setClickedCallback([=] {
 			controller->showPeerHistory(controller->session().user());
 		});
@@ -740,7 +765,8 @@ void MainMenu::setupMenu() {
 			st::mainMenuButton);
 		wallet->toggleOn(session->appConfig().value(
 		) | rpl::map([=] {
-			return session->appConfig().walletAvailable();
+			return session->appConfig().walletAvailable()
+				&& ::Retrogram::Config().showDrawerWallet.current();
 		}) | rpl::distinct_until_changed());
 		wallet->finishAnimating();
 		wallet->entity()->setClickedCallback([=] {
@@ -778,19 +804,26 @@ void MainMenu::setupMenu() {
 		controller->showSettings(Settings::RetrogramId());
 	});
 
-	if (::Retrogram::Config().showDrawerSettings.current()) {
-		addAction(
-			tr::lng_menu_settings(),
-			{ &st::menuIconSettings }
-		)->setClickedCallback([=] {
-			controller->showSettings();
-		});
-	}
+	addSlideAction(
+		tr::lng_menu_settings(),
+		{ &st::menuIconSettings },
+		::Retrogram::Config().showDrawerSettings.value()
+	)->setClickedCallback([=] {
+		controller->showSettings();
+	});
 
-	_nightThemeToggle = addAction(
-		tr::lng_menu_night_mode(),
-		{ &st::menuIconNightMode }
-	)->toggleOn(_nightThemeSwitches.events_starting_with(
+	const auto nightWrap = _menu->add(
+		object_ptr<Ui::SlideWrap<Ui::SettingsButton>>(
+			_menu,
+			CreateButtonWithIcon(
+				_menu,
+				tr::lng_menu_night_mode(),
+				st::mainMenuButton,
+				{ &st::menuIconNightMode })));
+	nightWrap->toggleOn(::Retrogram::Config().showDrawerNightMode.value());
+	nightWrap->finishAnimating();
+	_nightThemeToggle = nightWrap->entity();
+	_nightThemeToggle->toggleOn(_nightThemeSwitches.events_starting_with(
 		Window::Theme::IsNightMode()
 	));
 	_nightThemeToggle->toggledChanges(

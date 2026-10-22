@@ -454,6 +454,20 @@ Widget::Widget(
 	) | rpl::on_next([=](FilterId id) {
 		switchToChatsFilter(id);
 	}, lifetime());
+
+	::Retrogram::Config().showSearch.changes(
+	) | rpl::on_next([=] {
+		updateControlsVisibility(true);
+		updateControlsGeometry();
+		update();
+	}, lifetime());
+
+	::Retrogram::Config().showMainMenuButton.changes(
+	) | rpl::on_next([=] {
+		updateControlsVisibility(true);
+		updateControlsGeometry();
+		update();
+	}, lifetime());
 	rpl::combine(
 		_scroll->heightValue(),
 		_topBarSuggestionHeightChanged.events_starting_with(0)
@@ -1947,9 +1961,15 @@ void Widget::updateControlsVisibility(bool fast) {
 	if (_updateTelegram) {
 		_updateTelegram->show();
 	}
+	const auto hasSearch = ::Retrogram::Config().showSearch.current();
+	const auto hasMenu = ::Retrogram::Config().showMainMenuButton.current();
 	_searchControls->setVisible(
 		!_openedFolder && !_openedForum && !_openedCommunity
-		&& ::Retrogram::Config().showSearch.current());
+		&& (hasSearch || hasMenu));
+	_search->setVisible(hasSearch);
+	_cancelSearch->setVisible(hasSearch && !_search->getLastText().isEmpty());
+	_mainMenu.toggle->setVisible(hasMenu);
+	_mainMenu.under->setVisible(hasMenu);
 	if (_moreChatsBar) {
 		_moreChatsBar->show();
 	}
@@ -4550,16 +4570,19 @@ void Widget::updateControlsGeometry() {
 		? ((smallw - ratiow) / float64(smallw - _narrowWidth))
 		: 0.;
 
+	const auto hasSearchGeo = ::Retrogram::Config().showSearch.current();
+	const auto hasMenuGeo = ::Retrogram::Config().showMainMenuButton.current();
+
 	auto filterLeft = (controller()->filtersWidth()
 		? st::dialogsFilterSkip
-		: (st::dialogsFilterPadding.x() + _mainMenu.toggle->width()))
+		: (st::dialogsFilterPadding.x() + (hasMenuGeo ? _mainMenu.toggle->width() : 0)))
 		+ st::dialogsFilterPadding.x();
 	const auto filterRight = st::dialogsFilterSkip
 		+ st::dialogsFilterPadding.x();
 	const auto filterWidth = std::max(ratiow, smallw)
 		- filterLeft
 		- filterRight;
-	const auto filterAreaHeight = st::topBarHeight;
+	const auto filterAreaHeight = (!hasSearchGeo && !hasMenuGeo) ? 0 : st::topBarHeight;
 	_searchControls->setGeometry(0, filterAreaTop, ratiow, filterAreaHeight);
 	if (_subsectionTopBar) {
 		_subsectionTopBar->setGeometryWithNarrowRatio(

@@ -9,5 +9,6 @@ Copyright (C) 2026 Retrogram Team
 namespace Settings {
 
 [[nodiscard]] Type RetrogramId();
+[[nodiscard]] Type RetrogramCustomizationId();
 
 } // namespace Settings

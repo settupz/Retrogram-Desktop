@@ -775,6 +775,7 @@ private:
 	mutable bool _collectOwnedIcons = true;
 
 	rpl::lifetime _colorIndicesLifetime;
+	rpl::lifetime _retrogramLifetime;
 
 };
 
